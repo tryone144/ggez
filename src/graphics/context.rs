@@ -97,7 +97,7 @@ pub struct GraphicsContext {
 
     pub(crate) fs: Filesystem,
 
-    bind_group: Option<(Vec<BindGroupEntryKey>, ArcBindGroup)>,
+    bind_group: Option<([BindGroupEntryKey; 2], ArcBindGroup)>,
 }
 
 impl GraphicsContext {
@@ -163,70 +163,40 @@ impl GraphicsContext {
         view: ArcTextureView,
         sampler: ArcSampler,
     ) -> (ArcBindGroup, ArcBindGroupLayout) {
-        let key = vec![
+        let key = [
             BindGroupEntryKey::Image { id: view.id() },
             BindGroupEntryKey::Sampler { id: sampler.id() },
         ];
-        if let Some(bind_group) = self.bind_group.as_mut() {
-            if key == bind_group.0 {
-                let layout = BindGroupLayoutBuilder::new()
-                    .image(wgpu::ShaderStages::FRAGMENT)
-                    .sampler(wgpu::ShaderStages::FRAGMENT)
-                    .create(&self.wgpu.device, &mut self.bind_group_cache);
-                (bind_group.1.clone(), layout)
-            } else {
-                let layout = BindGroupLayoutBuilder::new()
-                    .image(wgpu::ShaderStages::FRAGMENT)
-                    .sampler(wgpu::ShaderStages::FRAGMENT)
-                    .create(&self.wgpu.device, &mut self.bind_group_cache);
-                *bind_group = (
-                    key,
-                    ArcBindGroup::new(self.wgpu.device.create_bind_group(
-                        &wgpu::BindGroupDescriptor {
-                            label: None,
-                            layout: layout.as_ref(),
-                            entries: &[
-                                wgpu::BindGroupEntry {
-                                    binding: 0,
-                                    resource: wgpu::BindingResource::TextureView(view.as_ref()),
-                                },
-                                wgpu::BindGroupEntry {
-                                    binding: 1,
-                                    resource: wgpu::BindingResource::Sampler(sampler.as_ref()),
-                                },
-                            ],
-                        },
-                    )),
-                );
-                (bind_group.1.clone(), layout)
-            }
-        } else {
-            let layout = BindGroupLayoutBuilder::new()
-                .image(wgpu::ShaderStages::FRAGMENT)
-                .sampler(wgpu::ShaderStages::FRAGMENT)
-                .create(&self.wgpu.device, &mut self.bind_group_cache);
-            self.bind_group =
-                Some((
-                    key,
-                    ArcBindGroup::new(self.wgpu.device.create_bind_group(
-                        &wgpu::BindGroupDescriptor {
-                            label: None,
-                            layout: layout.as_ref(),
-                            entries: &[
-                                wgpu::BindGroupEntry {
-                                    binding: 0,
-                                    resource: wgpu::BindingResource::TextureView(view.as_ref()),
-                                },
-                                wgpu::BindGroupEntry {
-                                    binding: 1,
-                                    resource: wgpu::BindingResource::Sampler(sampler.as_ref()),
-                                },
-                            ],
-                        },
-                    )),
+        let layout = BindGroupLayoutBuilder::new()
+            .image(wgpu::ShaderStages::FRAGMENT)
+            .sampler(wgpu::ShaderStages::FRAGMENT)
+            .create(&self.wgpu.device, &mut self.bind_group_cache);
+
+        let bind_group = match &self.bind_group {
+            Some((old_key, bind_group)) if old_key == &key => bind_group.clone(),
+            _ => {
+                let bind_group = ArcBindGroup::new(self.wgpu.device.create_bind_group(
+                    &wgpu::BindGroupDescriptor {
+                        label: None,
+                        layout: layout.as_ref(),
+                        entries: &[
+                            wgpu::BindGroupEntry {
+                                binding: 0,
+                                resource: wgpu::BindingResource::TextureView(view.as_ref()),
+                            },
+                            wgpu::BindGroupEntry {
+                                binding: 1,
+                                resource: wgpu::BindingResource::Sampler(sampler.as_ref()),
+                            },
+                        ],
+                    },
                 ));
-            (self.bind_group.as_ref().unwrap().1.clone(), layout)
-        }
+                self.bind_group = Some((key, bind_group.clone()));
+                bind_group
+            }
+        };
+
+        (bind_group, layout)
     }
 
     #[allow(unsafe_code)]
