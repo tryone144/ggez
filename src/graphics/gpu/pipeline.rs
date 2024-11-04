@@ -51,7 +51,7 @@ impl PipelineCache {
                         layout: Some(layout),
                         vertex: wgpu::VertexState {
                             module: &info.vs,
-                            entry_point: &info.vs_entry,
+                            entry_point: Some(&info.vs_entry),
                             compilation_options: wgpu::PipelineCompilationOptions::default(),
                             buffers: if info.vertices { &vertex_buffers } else { &[] },
                         },
@@ -78,7 +78,7 @@ impl PipelineCache {
                         },
                         fragment: Some(wgpu::FragmentState {
                             module: &info.fs,
-                            entry_point: &info.fs_entry,
+                            entry_point: Some(&info.fs_entry),
                             compilation_options: wgpu::PipelineCompilationOptions::default(),
                             targets: &[Some(wgpu::ColorTargetState {
                                 format: info.format,

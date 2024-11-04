@@ -358,7 +358,7 @@ impl<'a> InternalCanvas<'a> {
 
         self.pass.set_bind_group(
             0,
-            self.arenas.bind_groups.alloc(uniform_bind_group),
+            &**self.arenas.bind_groups.alloc(uniform_bind_group),
             &[uniform_alloc.offset as u32], // <- the dynamic offset
         );
 
@@ -432,10 +432,10 @@ impl<'a> InternalCanvas<'a> {
 
         self.pass.set_bind_group(
             0,
-            self.arenas.bind_groups.alloc(uniform_bind_group),
+            &**self.arenas.bind_groups.alloc(uniform_bind_group),
             &[uniform_alloc.offset as u32],
         );
-        self.pass.set_bind_group(2, &instances.bind_group, &[]);
+        self.pass.set_bind_group(2, &*instances.bind_group, &[]);
 
         self.pass.set_vertex_buffer(0, mesh.verts.slice(..));
         self.pass
@@ -475,7 +475,7 @@ impl<'a> InternalCanvas<'a> {
 
         self.pass.set_bind_group(
             0,
-            self.arenas.bind_groups.alloc(text_uniforms_bind),
+            &**self.arenas.bind_groups.alloc(text_uniforms_bind),
             &[self.text_uniforms.offset as u32],
         );
 
@@ -556,23 +556,25 @@ impl<'a> InternalCanvas<'a> {
                 // the dummy group ensures the user's bind group is at index 3
                 groups.push(dummy_layout);
                 self.pass
-                    .set_bind_group(2, self.arenas.bind_groups.alloc(dummy_group), &[]);
+                    .set_bind_group(2, &**self.arenas.bind_groups.alloc(dummy_group), &[]);
             }
 
             let shader = match ty {
                 ShaderType::Draw | ShaderType::Instance { .. } => {
-                    if let Some((bind_group, bind_group_layout, offset)) = &self.shader_bind_group {
-                        self.pass.set_bind_group(3, bind_group, &[*offset]);
+                    if let Some((bind_group, ref bind_group_layout, offset)) =
+                        self.shader_bind_group
+                    {
+                        self.pass.set_bind_group(3, bind_group, &[offset]);
                         groups.push(bind_group_layout.clone());
                     }
 
                     &self.shader
                 }
                 ShaderType::Text => {
-                    if let Some((bind_group, bind_group_layout, offset)) =
-                        &self.text_shader_bind_group
+                    if let Some((bind_group, ref bind_group_layout, offset)) =
+                        self.text_shader_bind_group
                     {
-                        self.pass.set_bind_group(3, bind_group, &[*offset]);
+                        self.pass.set_bind_group(3, bind_group, &[offset]);
                         groups.push(bind_group_layout.clone());
                     }
 
@@ -654,7 +656,7 @@ impl<'a> InternalCanvas<'a> {
             self.curr_image = Some(image.view);
 
             self.pass
-                .set_bind_group(1, self.arenas.bind_groups.alloc(image_bind), &[]);
+                .set_bind_group(1, &**self.arenas.bind_groups.alloc(image_bind), &[]);
         }
     }
 
@@ -678,7 +680,7 @@ impl<'a> InternalCanvas<'a> {
             self.curr_image = Some(view);
 
             self.pass
-                .set_bind_group(1, self.arenas.bind_groups.alloc(image_bind), &[]);
+                .set_bind_group(1, &**self.arenas.bind_groups.alloc(image_bind), &[]);
         }
     }
 }

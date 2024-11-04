@@ -145,7 +145,7 @@ impl MainState {
                     layout: None,
                     vertex: wgpu::VertexState {
                         module: &shader,
-                        entry_point: "vs_main",
+                        entry_point: Some("vs_main"),
                         compilation_options: Default::default(),
                         buffers: &[wgpu::VertexBufferLayout {
                             array_stride: std::mem::size_of::<Vertex>() as _,
@@ -189,7 +189,7 @@ impl MainState {
                     },
                     fragment: Some(wgpu::FragmentState {
                         module: &shader,
-                        entry_point: "fs_main",
+                        entry_point: Some("fs_main"),
                         compilation_options: Default::default(),
                         targets: &[Some(wgpu::ColorTargetState {
                             format: ctx.gfx.surface_format(),

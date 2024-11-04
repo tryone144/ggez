@@ -779,7 +779,7 @@ impl GraphicsContext {
             let bind = fcx.arenas.bind_groups.alloc(bind);
 
             present_pass.set_pipeline(copy);
-            present_pass.set_bind_group(0, bind, &[]);
+            present_pass.set_bind_group(0, &**bind, &[]);
             present_pass.draw(0..3, 0..1);
 
             std::mem::drop(present_pass);
