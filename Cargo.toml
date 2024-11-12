@@ -50,7 +50,7 @@ mint = "0.5.9"
 gilrs = { version = "0.11", optional = true }
 approx = "0.5"
 bytemuck = { version = "1.12", features = ["derive"] }
-pollster = "0.3"
+pollster = "0.4"
 memoffset = "0.9"
 crevice = { version = "0.17", features = ["glam"] }
 typed-arena = "2.0"
