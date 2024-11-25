@@ -54,6 +54,29 @@ impl ApplicationHandler<()> for CustomApplicationHandler {
             WindowEvent::CloseRequested => {
                 self.ctx.request_quit();
             }
+            WindowEvent::RedrawRequested => {
+                // Draw
+                self.ctx.gfx.begin_frame().unwrap();
+
+                let mut canvas = graphics::Canvas::from_frame(
+                    &self.ctx,
+                    graphics::Color::from([0.1, 0.2, 0.3, 1.0]),
+                );
+
+                let circle = graphics::Mesh::new_circle(
+                    &self.ctx,
+                    DrawMode::fill(),
+                    ggez::glam::Vec2::new(0.0, 0.0),
+                    100.0,
+                    2.0,
+                    Color::WHITE,
+                )
+                .unwrap();
+                canvas.draw(&circle, ggez::glam::Vec2::new(self.position, 380.0));
+
+                canvas.finish(&mut self.ctx).unwrap();
+                self.ctx.gfx.end_frame().unwrap();
+            }
             WindowEvent::KeyboardInput { event, .. } => {
                 if Key::Named(NamedKey::Escape) == event.logical_key {
                     self.ctx.request_quit();
@@ -85,26 +108,6 @@ impl ApplicationHandler<()> for CustomApplicationHandler {
         // Update
         self.position += 1.0;
 
-        // Draw
-        self.ctx.gfx.begin_frame().unwrap();
-
-        let mut canvas =
-            graphics::Canvas::from_frame(&self.ctx, graphics::Color::from([0.1, 0.2, 0.3, 1.0]));
-
-        let circle = graphics::Mesh::new_circle(
-            &self.ctx,
-            DrawMode::fill(),
-            ggez::glam::Vec2::new(0.0, 0.0),
-            100.0,
-            2.0,
-            Color::WHITE,
-        )
-        .unwrap();
-        canvas.draw(&circle, ggez::glam::Vec2::new(self.position, 380.0));
-
-        canvas.finish(&mut self.ctx).unwrap();
-        self.ctx.gfx.end_frame().unwrap();
-
         // reset the mouse delta for the next frame
         // necessary because it's calculated cumulatively each cycle
         self.ctx.mouse.reset_delta();
@@ -117,6 +120,8 @@ impl ApplicationHandler<()> for CustomApplicationHandler {
         self.ctx.keyboard.save_keyboard_state();
         self.ctx.mouse.save_mouse_state();
 
+        // This queues the next frame to be rendered as soon as possible.
+        event::request_redraw(&mut self.ctx);
         ggez::timer::yield_now();
     }
 }
