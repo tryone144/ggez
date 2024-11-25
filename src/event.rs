@@ -537,6 +537,33 @@ where
                     ErrorOrigin::MouseEnterOrLeave,
                 ) {}
             }
+            WindowEvent::RedrawRequested => {
+                // If you are writing your own event loop, make sure you include calls
+                // `GraphicsContext::begin_frame()` and `GraphicsContext::end_frame()`.
+                //
+                // These update ggez's internal state however necessary.
+                if let Err(e) = HasMut::<GraphicsContext>::retrieve_mut(&mut self.ctx).begin_frame()
+                {
+                    error!("Error on GraphicsContext::begin_frame(): {e:?}");
+                    eprintln!("Error on GraphicsContext::begin_frame(): {e:?}");
+                    event_loop.exit();
+                }
+
+                if let Err(e) = self.state.draw(&mut self.ctx) {
+                    error!("Error on EventHandler::draw(): {e:?}");
+                    eprintln!("Error on EventHandler::draw(): {e:?}");
+                    if self.state.on_error(&mut self.ctx, ErrorOrigin::Draw, e) {
+                        event_loop.exit();
+                        return;
+                    }
+                }
+
+                if let Err(e) = HasMut::<GraphicsContext>::retrieve_mut(&mut self.ctx).end_frame() {
+                    error!("Error on GraphicsContext::end_frame(): {e:?}");
+                    eprintln!("Error on GraphicsContext::end_frame(): {e:?}");
+                    event_loop.exit();
+                }
+            }
             _x => {
                 // trace!("ignoring window event {:?}", x);
             }
@@ -569,10 +596,11 @@ where
     }
 
     fn about_to_wait(&mut self, event_loop: &ActiveEventLoop) {
-        // If you are writing your own event loop, make sure
-        // you include `timer_context.tick()` and
-        // `ctx.process_event()` calls.  These update ggez's
-        // internal state however necessary.
+        // If you are writing your own event loop, make sure you include calls
+        // to `TimeContext::tick()`, `KeyboardContext::save_keyboard_state()`,
+        // `MouseContext::reset_delta()`, and `MouseContext::save_mouse_state()`.
+        //
+        // These update ggez's internal state however necessary.
         let time = HasMut::<crate::timer::TimeContext>::retrieve_mut(&mut self.ctx);
         time.tick();
 
@@ -639,27 +667,6 @@ where
             return;
         };
 
-        if let Err(e) = HasMut::<GraphicsContext>::retrieve_mut(&mut self.ctx).begin_frame() {
-            error!("Error on GraphicsContext::begin_frame(): {e:?}");
-            eprintln!("Error on GraphicsContext::begin_frame(): {e:?}");
-            event_loop.exit();
-        }
-
-        if let Err(e) = self.state.draw(&mut self.ctx) {
-            error!("Error on EventHandler::draw(): {e:?}");
-            eprintln!("Error on EventHandler::draw(): {e:?}");
-            if self.state.on_error(&mut self.ctx, ErrorOrigin::Draw, e) {
-                event_loop.exit();
-                return;
-            }
-        }
-
-        if let Err(e) = HasMut::<GraphicsContext>::retrieve_mut(&mut self.ctx).end_frame() {
-            error!("Error on GraphicsContext::end_frame(): {e:?}");
-            eprintln!("Error on GraphicsContext::end_frame(): {e:?}");
-            event_loop.exit();
-        }
-
         // reset the mouse delta for the next frame
         // necessary because it's calculated cumulatively each cycle
         HasMut::<input::mouse::MouseContext>::retrieve_mut(&mut self.ctx).reset_delta();
@@ -669,6 +676,10 @@ where
         HasMut::<input::keyboard::KeyboardContext>::retrieve_mut(&mut self.ctx)
             .save_keyboard_state();
         HasMut::<input::mouse::MouseContext>::retrieve_mut(&mut self.ctx).save_mouse_state();
+
+        // If you are writing your own event loop, make sure to include
+        // `event::request_redraw()` to poll the next frame to be drawn.
+        request_redraw(&mut self.ctx);
     }
 }
 
@@ -744,6 +755,7 @@ where
         WindowEvent::Resized(physical_size) => {
             let gfx = HasMut::<GraphicsContext>::retrieve_mut(ctx);
             gfx.resize(*physical_size);
+            request_redraw(ctx);
         }
         WindowEvent::CursorMoved {
             position: physical_position,
@@ -786,4 +798,17 @@ where
         }
         _ => (),
     }
+}
+
+/// Queues a `WindowEvent::RedrawRequested` event to be dispatched
+/// as soon as possible, to render the next frame.  If you are
+/// rolling your own event loop, you should call this after your
+/// game logic processed an update, for example in `about_to_wait()`.
+#[inline]
+pub fn request_redraw<C>(ctx: &mut C)
+where
+    C: HasMut<GraphicsContext>,
+{
+    let gfx = HasMut::<GraphicsContext>::retrieve_mut(ctx);
+    gfx.window.request_redraw();
 }
