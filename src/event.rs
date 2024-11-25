@@ -715,10 +715,7 @@ where
 /// receive before processing them yourself.
 pub fn process_device_event<C>(ctx: &mut C, _: &mut DeviceId, event: &mut DeviceEvent)
 where
-    C: HasMut<ContextFields>
-        + HasMut<GraphicsContext>
-        + HasMut<input::keyboard::KeyboardContext>
-        + HasMut<input::mouse::MouseContext>,
+    C: HasMut<input::mouse::MouseContext>,
 {
     if let DeviceEvent::MouseMotion { delta } = event {
         let mouse = HasMut::<input::mouse::MouseContext>::retrieve_mut(ctx);
