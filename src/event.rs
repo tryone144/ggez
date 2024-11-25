@@ -355,6 +355,9 @@ where
         mut window_id: WindowId,
         mut event: WindowEvent,
     ) {
+        // If you are writing your own event loop, make sure to include
+        // a call to `event::process_window_event()`.  This updates
+        // ggez's internal state however necessary.
         process_window_event(&mut self.ctx, &mut window_id, &mut event);
 
         match event {
@@ -546,6 +549,9 @@ where
         mut device_id: DeviceId,
         mut event: DeviceEvent,
     ) {
+        // If you are writing your own event loop, make sure to include
+        // a call to `event::process_device_event()`.  This updates
+        // ggez's internal state however necessary.
         process_device_event(&mut self.ctx, &mut device_id, &mut event);
 
         if let DeviceEvent::MouseMotion { delta } = event {
