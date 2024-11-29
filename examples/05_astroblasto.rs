@@ -20,14 +20,14 @@ use winit::keyboard::{Key, NamedKey};
 type Point2 = Vec2;
 type Vector2 = Vec2;
 
-/// *********************************************************************
-/// Basic stuff, make some helpers for vector functions.
-/// We use the glam math library to provide lots of
-/// math stuff.  This just adds some helpers.
-/// **********************************************************************
-
-/// Create a unit vector representing the
-/// given angle (in radians)
+// *********************************************************************
+// Basic stuff, make some helpers for vector functions.
+// We use the glam math library to provide lots of
+// math stuff.  This just adds some helpers.
+// **********************************************************************
+//
+// Create a unit vector representing the
+// given angle (in radians)
 fn vec_from_angle(angle: f32) -> Vector2 {
     let vx = angle.sin();
     let vy = angle.cos();
@@ -41,14 +41,15 @@ fn random_vec(rng: &mut Rand32, max_magnitude: f32) -> Vector2 {
     vec_from_angle(angle) * (mag)
 }
 
-/// *********************************************************************
-/// Now we define our Actors.
-/// An Actor is anything in the game world.
-/// We're not *quite* making a real entity-component system but it's
-/// pretty close.  For a more complicated game you would want a
-/// real ECS, but for this it's enough to say that all our game objects
-/// contain pretty much the same data.
-/// **********************************************************************
+// *********************************************************************
+// Now we define our Actors.
+// An Actor is anything in the game world.
+// We're not *quite* making a real entity-component system but it's
+// pretty close.  For a more complicated game you would want a
+// real ECS, but for this it's enough to say that all our game objects
+// contain pretty much the same data.
+// **********************************************************************
+
 #[derive(Debug)]
 enum ActorType {
     Player,
@@ -82,9 +83,9 @@ const SHOT_BBOX: f32 = 6.0;
 
 const MAX_ROCK_VEL: f32 = 50.0;
 
-/// *********************************************************************
-/// Now we have some constructor functions for different game objects.
-/// **********************************************************************
+// *********************************************************************
+// Now we have some constructor functions for different game objects.
+// **********************************************************************
 
 fn create_player() -> Actor {
     Actor {
@@ -147,15 +148,15 @@ fn create_rocks(
     (0..num).map(new_rock).collect()
 }
 
-/// *********************************************************************
-/// Now we make functions to handle physics.  We do simple Newtonian
-/// physics (so we do have inertia), and cap the max speed so that we
-/// don't have to worry too much about small objects clipping through
-/// each other.
-///
-/// Our unit of world space is simply pixels, though we do transform
-/// the coordinate system so that +y is up and -y is down.
-/// **********************************************************************
+// *********************************************************************
+// Now we make functions to handle physics.  We do simple Newtonian
+// physics (so we do have inertia), and cap the max speed so that we
+// don't have to worry too much about small objects clipping through
+// each other.
+//
+// Our unit of world space is simply pixels, though we do transform
+// the coordinate system so that +y is up and -y is down.
+// **********************************************************************
 
 /// How fast shots move.
 const SHOT_SPEED: f32 = 200.0;
@@ -229,12 +230,12 @@ fn world_to_screen_coords(screen_width: f32, screen_height: f32, point: Point2) 
     Point2::new(x, y)
 }
 
-/// **********************************************************************
-/// So that was the real meat of our game.  Now we just need a structure
-/// to contain the images, sounds, etc. that we need to hang on to; this
-/// is our "asset management system".  All the file names and such are
-/// just hard-coded.
-/// **********************************************************************
+// **********************************************************************
+// So that was the real meat of our game.  Now we just need a structure
+// to contain the images, sounds, etc. that we need to hang on to; this
+// is our "asset management system".  All the file names and such are
+// just hard-coded.
+// **********************************************************************
 
 struct Assets {
     player_image: graphics::Image,
@@ -271,11 +272,12 @@ impl Assets {
     }
 }
 
-/// **********************************************************************
-/// The `InputState` is exactly what it sounds like, it just keeps track of
-/// the user's input state so that we turn keyboard events into something
-/// state-based and device-independent.
-/// **********************************************************************
+// **********************************************************************
+// The `InputState` is exactly what it sounds like, it just keeps track of
+// the user's input state so that we turn keyboard events into something
+// state-based and device-independent.
+// **********************************************************************
+
 #[derive(Debug)]
 struct InputState {
     xaxis: f32,
@@ -293,16 +295,16 @@ impl Default for InputState {
     }
 }
 
-/// **********************************************************************
-/// Now we're getting into the actual game loop.  The `MainState` is our
-/// game's "global" state, it keeps track of everything we need for
-/// actually running the game.
-///
-/// We simply keep game objects in a vector for each actor type, and we
-/// probably mingle gameplay-state (like score) and hardware-state
-/// (like `input`) a little more than we should, but for something
-/// this small it hardly matters.
-/// **********************************************************************
+// **********************************************************************
+// Now we're getting into the actual game loop.  The `MainState` is our
+// game's "global" state, it keeps track of everything we need for
+// actually running the game.
+//
+// We simply keep game objects in a vector for each actor type, and we
+// probably mingle gameplay-state (like score) and hardware-state
+// (like `input`) a little more than we should, but for something
+// this small it hardly matters.
+// **********************************************************************
 
 struct MainState {
     // because we want to screenshot, we need to ensure we're rendering to Rgba8
@@ -407,9 +409,9 @@ impl MainState {
     }
 }
 
-/// **********************************************************************
-/// A couple of utility functions.
-/// **********************************************************************
+// **********************************************************************
+// A couple of utility functions.
+// **********************************************************************
 
 fn print_instructions() {
     println!();
@@ -436,11 +438,12 @@ fn draw_actor(
     canvas.draw(image, drawparams);
 }
 
-/// **********************************************************************
-/// Now we implement the `EventHandler` trait from `ggez::event`, which provides
-/// ggez with callbacks for updating and drawing our game, as well as
-/// handling input events.
-/// **********************************************************************
+// **********************************************************************
+// Now we implement the `EventHandler` trait from `ggez::event`, which provides
+// ggez with callbacks for updating and drawing our game, as well as
+// handling input events.
+// **********************************************************************
+
 impl EventHandler for MainState {
     fn update(&mut self, ctx: &mut Context) -> GameResult {
         const DESIRED_FPS: u32 = 60;
@@ -600,10 +603,10 @@ impl EventHandler for MainState {
     }
 }
 
-/// **********************************************************************
-/// Finally our main function!  Which merely sets up a config and calls
-/// `ggez::event::run()` with our `EventHandler` type.
-/// **********************************************************************
+// **********************************************************************
+// Finally our main function!  Which merely sets up a config and calls
+// `ggez::event::run()` with our `EventHandler` type.
+// **********************************************************************
 
 pub fn main() -> GameResult {
     // We add the CARGO_MANIFEST_DIR/resources to the resource paths

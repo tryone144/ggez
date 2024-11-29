@@ -63,7 +63,6 @@ impl MouseContext {
     }
 
     /// Returns whether or not the given mouse button is pressed.
-
     pub fn button_pressed(&self, button: MouseButton) -> bool {
         self.buttons_pressed.contains(&button)
     }

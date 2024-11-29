@@ -685,7 +685,7 @@ impl<'a> InternalCanvas<'a> {
     }
 }
 
-impl<'a> Drop for InternalCanvas<'a> {
+impl Drop for InternalCanvas<'_> {
     fn drop(&mut self) {
         self.finalize();
     }
