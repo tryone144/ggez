@@ -67,7 +67,7 @@ pub struct GamepadsIterator<'a> {
     wrapped: ConnectedGamepadsIterator<'a>,
 }
 
-impl<'a> fmt::Debug for GamepadsIterator<'a> {
+impl fmt::Debug for GamepadsIterator<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "<GamepadsIterator: {self:p}>")
     }

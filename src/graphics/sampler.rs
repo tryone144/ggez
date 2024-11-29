@@ -46,7 +46,7 @@ impl Default for Sampler {
     }
 }
 
-impl<'a> From<Sampler> for wgpu::SamplerDescriptor<'a> {
+impl From<Sampler> for wgpu::SamplerDescriptor<'_> {
     fn from(sampler: Sampler) -> Self {
         wgpu::SamplerDescriptor {
             label: None,
