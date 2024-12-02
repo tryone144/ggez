@@ -3,7 +3,7 @@ use crate::{
     graphics::{self, Canvas3d, DrawParam3d, Image},
 };
 
-#[cfg(feature = "gltf")]
+#[cfg(any(feature = "gltf", feature = "obj"))]
 use crate::{GameError, GameResult};
 #[cfg(feature = "gltf")]
 use base64::Engine;
@@ -15,7 +15,7 @@ use gltf::scene::Transform;
 use image::EncodableLayout;
 #[cfg(feature = "obj")]
 use num_traits::FromPrimitive;
-#[cfg(feature = "gltf")]
+#[cfg(any(feature = "gltf", feature = "obj"))]
 use std::path::Path;
 
 use glam::Vec3;
@@ -872,6 +872,7 @@ impl Model {
     pub fn from_path(
         gfx: &mut impl HasMut<GraphicsContext>,
         path: impl AsRef<Path>,
+        #[allow(unused_variables)]
         image: impl Into<Option<Image>>,
     ) -> GameResult<Self> {
         match path.as_ref().extension() {
@@ -891,7 +892,7 @@ impl Model {
     }
 
     /// Load a model from the given bytes. Either gltf or obj
-    #[cfg(any(feature = "obj", feature = "gltf"))]
+    #[cfg(all(feature = "obj", feature = "gltf"))]
     pub fn from_bytes(
         gfx: &mut impl HasMut<GraphicsContext>,
         bytes: &[u8],
@@ -906,6 +907,26 @@ impl Model {
                 )),
             },
         }
+    }
+
+    /// Load a model from the given bytes.
+    #[cfg(all(feature = "obj", not(feature = "gltf")))]
+    pub fn from_bytes(
+        gfx: &mut impl HasMut<GraphicsContext>,
+        bytes: &[u8],
+        image: impl Into<Option<Image>>,
+    ) -> GameResult<Self> {
+        Model::from_obj_bytes(gfx, bytes, image)
+    }
+
+    /// Load a model from the given bytes.
+    #[cfg(all(not(feature = "obj"), feature = "gltf"))]
+    pub fn from_bytes(
+        gfx: &mut impl HasMut<GraphicsContext>,
+        bytes: &[u8],
+        _image: impl Into<Option<Image>>,
+    ) -> GameResult<Self> {
+        Model::from_gltf_bytes(gfx, bytes)
     }
 
     /// Load obj file from a path.

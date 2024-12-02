@@ -37,6 +37,10 @@ use winit::event::{DeviceEvent, DeviceId, StartCause};
 use winit::event_loop::ActiveEventLoop;
 use winit::window::WindowId;
 
+#[cfg(not(feature = "gamepad"))]
+// Dummy gamepad context
+use crate::context::GamepadContext;
+
 /// Used in [`EventHandler::on_error()`](trait.EventHandler.html#method.on_error)
 /// to specify where an error originated
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]

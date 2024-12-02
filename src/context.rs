@@ -20,7 +20,7 @@ use crate::input::gamepad::GamepadContext;
 
 #[cfg(not(feature = "gamepad"))]
 /// Dummy gamepad context
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub struct GamepadContext;
 
 #[cfg(not(feature = "gamepad"))]
