@@ -195,6 +195,7 @@ pub use glam;
 pub use mint;
 pub use winit;
 
+pub mod app;
 pub mod audio;
 pub mod conf;
 pub mod context;
