@@ -49,17 +49,24 @@ pub(crate) struct FrameArenas {
 #[allow(missing_docs)]
 pub struct WgpuContext {
     pub instance: wgpu::Instance,
-    pub surface: wgpu::Surface<'static>,
     pub device: wgpu::Device,
     pub queue: wgpu::Queue,
+}
+
+/// Dropable window context objects.
+#[derive(Debug)]
+#[allow(missing_docs)]
+pub struct WindowContext {
+    pub window: Arc<winit::window::Window>,
+    pub surface: wgpu::Surface<'static>,
 }
 
 /// A concrete graphics context for WGPU rendering.
 #[allow(missing_debug_implementations)]
 pub struct GraphicsContext {
     pub(crate) wgpu: Arc<WgpuContext>,
+    pub(crate) win: WindowContext,
 
-    pub(crate) window: Arc<winit::window::Window>,
     pub(crate) surface_config: wgpu::SurfaceConfiguration,
 
     pub(crate) bind_group_cache: BindGroupCache,
@@ -207,7 +214,7 @@ impl GraphicsContext {
         conf: &Conf,
         filesystem: &Filesystem,
     ) -> GameResult<Self> {
-        let mut window_builder = winit::window::Window::default_attributes()
+        let mut window_attributes = winit::window::Window::default_attributes()
             .with_title(conf.window_setup.title.clone())
             .with_inner_size(conf.window_mode.actual_size().unwrap()) // Unwrap since actual_size only fails if one of the window dimensions is less than 1
             .with_resizable(conf.window_mode.resizable)
@@ -224,33 +231,33 @@ impl GraphicsContext {
         {
             {
                 use winit::platform::x11::WindowAttributesExtX11;
-                window_builder = window_builder.with_name(game_id, game_id);
+                window_attributes = window_attributes.with_name(game_id, game_id);
             }
             {
                 use winit::platform::wayland::WindowAttributesExtWayland;
-                window_builder = window_builder.with_name(game_id, game_id);
+                window_attributes = window_attributes.with_name(game_id, game_id);
             }
         }
 
         #[cfg(target_os = "windows")]
         {
             use winit::platform::windows::WindowAttributesExtWindows;
-            window_builder = window_builder
+            window_attributes = window_attributes
                 .with_drag_and_drop(false)
                 .with_clip_children(false);
         }
 
-        window_builder = if !conf.window_setup.icon.is_empty() {
+        window_attributes = if !conf.window_setup.icon.is_empty() {
             let icon = load_icon(conf.window_setup.icon.as_ref(), filesystem)?;
-            window_builder.with_window_icon(Some(icon))
+            window_attributes.with_window_icon(Some(icon))
         } else {
-            window_builder
+            window_attributes
         };
 
         // TODO remove deprecated create_window usage
         // In order to do this, we need to switch window creation to a point inside the active event loop instead of before.
         #[allow(deprecated)]
-        let window = Arc::new(event_loop.create_window(window_builder)?);
+        let window = Arc::new(event_loop.create_window(window_attributes)?);
         let surface = instance
             .create_surface(window.clone())
             .map_err(|_| GameError::GraphicsInitializationError)?;
@@ -290,14 +297,15 @@ impl GraphicsContext {
 
         let wgpu = Arc::new(WgpuContext {
             instance,
-            surface,
             device,
             queue,
         });
 
-        let capabilities = wgpu.surface.get_capabilities(&adapter);
+        let win = WindowContext { window, surface };
 
-        let size = window.inner_size();
+        let capabilities = win.surface.get_capabilities(&adapter);
+
+        let size = win.window.inner_size();
         let surface_config = wgpu::SurfaceConfiguration {
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
             format: capabilities.formats[0],
@@ -313,7 +321,7 @@ impl GraphicsContext {
             view_formats: vec![],
         };
 
-        wgpu.surface.configure(&wgpu.device, &surface_config);
+        win.surface.configure(&wgpu.device, &surface_config);
 
         let mut bind_group_cache = BindGroupCache::new();
         let pipeline_cache = PipelineCache::new();
@@ -447,8 +455,8 @@ impl GraphicsContext {
 
         let mut this = GraphicsContext {
             wgpu,
+            win,
 
-            window,
             surface_config,
 
             bind_group_cache,
@@ -539,7 +547,7 @@ impl GraphicsContext {
 
     /// Returns the size of the window’s underlying drawable in physical pixels as (width, height).
     pub fn drawable_size(&self) -> (f32, f32) {
-        let size = self.window.inner_size();
+        let size = self.win.window.inner_size();
         (size.width as f32, size.height as f32)
     }
 
@@ -553,19 +561,20 @@ impl GraphicsContext {
 
     /// Sets the window title.
     pub fn set_window_title(&self, title: &str) {
-        self.window.set_title(title);
+        self.win.window.set_title(title);
     }
 
     /// Returns the position of the system window, including the outer frame.
     pub fn window_position(&self) -> GameResult<PhysicalPosition<i32>> {
-        self.window
+        self.win
+            .window
             .outer_position()
             .map_err(|e| GameError::WindowError(e.to_string()))
     }
 
     /// Sets the window position.
     pub fn set_window_position(&self, position: impl Into<winit::dpi::Position>) -> GameResult {
-        self.window.set_outer_position(position);
+        self.win.window.set_outer_position(position);
         Ok(())
     }
 
@@ -573,13 +582,14 @@ impl GraphicsContext {
     /// including borders, titlebar, etc.
     /// Returns zeros if the window doesn't exist.
     pub fn size(&self) -> (f32, f32) {
-        let size = self.window.outer_size();
+        let size = self.win.window.outer_size();
         (size.width as f32, size.height as f32)
     }
 
     /// Returns an iterator providing all resolutions supported by the current monitor.
     pub fn supported_resolutions(&self) -> impl Iterator<Item = winit::dpi::PhysicalSize<u32>> {
-        self.window
+        self.win
+            .window
             .current_monitor()
             .into_iter()
             .flat_map(|monitor| monitor.video_modes().map(|vm| vm.size()))
@@ -588,7 +598,7 @@ impl GraphicsContext {
     /// Returns a reference to the Winit window.
     #[inline]
     pub fn window(&self) -> &winit::window::Window {
-        &self.window
+        &self.win.window
     }
 
     /// Sets the window icon. `None` for path removes the icon.
@@ -602,7 +612,7 @@ impl GraphicsContext {
             Some(p) => Some(load_icon(p.as_ref(), filesystem)?),
             None => None,
         };
-        self.window.set_window_icon(icon);
+        self.win.window.set_window_icon(icon);
         Ok(())
     }
 
@@ -666,16 +676,16 @@ impl GraphicsContext {
             )));
         }
 
-        let size = self.window.inner_size();
-        let frame = match self.wgpu.surface.get_current_texture() {
+        let size = self.win.window.inner_size();
+        let frame = match self.win.surface.get_current_texture() {
             Ok(frame) => Ok(frame),
             Err(_) => {
                 self.surface_config.width = size.width.max(1);
                 self.surface_config.height = size.height.max(1);
-                self.wgpu
+                self.win
                     .surface
                     .configure(&self.wgpu.device, &self.surface_config);
-                self.wgpu.surface.get_current_texture().map_err(|_| {
+                self.win.surface.get_current_texture().map_err(|_| {
                     GameError::RenderError(String::from("failed to get next swapchain image"))
                 })
             }
@@ -774,11 +784,11 @@ impl GraphicsContext {
     }
 
     pub(crate) fn resize(&mut self, _new_size: dpi::PhysicalSize<u32>) {
-        let size = self.window.inner_size();
+        let size = self.win.window.inner_size();
         let _ = self.wgpu.device.poll(wgpu::Maintain::Wait);
         self.surface_config.width = size.width.max(1);
         self.surface_config.height = size.height.max(1);
-        self.wgpu
+        self.win
             .surface
             .configure(&self.wgpu.device, &self.surface_config);
         self.update_frame_image();
@@ -799,7 +809,7 @@ impl GraphicsContext {
     }
 
     pub(crate) fn set_window_mode(&mut self, mode: &WindowMode) -> GameResult {
-        let window = &mut self.window;
+        let window = &mut self.win.window;
 
         // TODO LATER: find out if single-dimension constraints are possible?
         let min_dimensions = if mode.min_width >= 1.0 && mode.min_height >= 1.0 {
@@ -866,7 +876,7 @@ impl GraphicsContext {
         self.surface_config.width = size.width.max(1);
         self.surface_config.height = size.height.max(1);
 
-        self.wgpu
+        self.win
             .surface
             .configure(&self.wgpu.device, &self.surface_config);
 

@@ -228,14 +228,14 @@ pub fn handle_move(ctx: &mut Context, new_x: f32, new_y: f32) {
 // TODO: Move to graphics context (This isn't input)
 pub fn set_cursor_hidden(ctx: &mut Context, hidden: bool) {
     ctx.mouse.cursor_hidden = hidden;
-    ctx.gfx.window.set_cursor_visible(!hidden);
+    ctx.gfx.win.window.set_cursor_visible(!hidden);
 }
 
 /// Modifies the mouse cursor type of the window.
 // TODO: Move to graphics context (This isn't input)
 pub fn set_cursor_type(ctx: &mut Context, cursor_type: CursorIcon) {
     ctx.mouse.cursor_type = cursor_type;
-    ctx.gfx.window.set_cursor(cursor_type);
+    ctx.gfx.win.window.set_cursor(cursor_type);
 }
 
 /// Get whether or not the mouse is grabbed.
@@ -252,6 +252,7 @@ pub fn cursor_grabbed(ctx: &Context) -> bool {
 pub fn set_cursor_grabbed(ctx: &mut Context, grabbed: bool) -> GameResult {
     ctx.mouse.cursor_grabbed = grabbed;
     ctx.gfx
+        .win
         .window
         .set_cursor_grab(if grabbed {
             if cfg!(target_os = "macos") {
@@ -278,6 +279,7 @@ where
     let point = glam::Vec2::from(point.into());
     ctx.mouse.last_position = point;
     ctx.gfx
+        .win
         .window
         .set_cursor_position(dpi::LogicalPosition {
             x: f64::from(point.x),

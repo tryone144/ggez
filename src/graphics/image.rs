@@ -503,7 +503,7 @@ impl ScreenImage {
 
     fn size(gfx: &impl Has<GraphicsContext>, (width, height): (f32, f32)) -> (u32, u32) {
         let gfx = gfx.retrieve();
-        let size = gfx.window.inner_size();
+        let size = gfx.win.window.inner_size();
         let width = (size.width as f32 * width) as u32;
         let height = (size.height as f32 * height) as u32;
         (width.max(1), height.max(1))
